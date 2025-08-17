@@ -1,7 +1,8 @@
 name: 'Terraform Apply'
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - master
     paths:
@@ -15,6 +16,8 @@ jobs:
   terraform-apply:
     name: 'Terraform Apply'
     runs-on: ubuntu-latest
+    # CRITICAL: Only run if PR was merged (not just closed/cancelled)
+    if: github.event.pull_request.merged == true
     environment: production
     
     env:
@@ -33,6 +36,9 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        # IMPORTANT: Checkout the merged master, not the PR branch
+        ref: master
     
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
