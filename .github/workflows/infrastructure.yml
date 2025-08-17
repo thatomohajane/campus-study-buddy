@@ -1,5 +1,5 @@
 # Campus Study Buddy - Infrastructure Deployment
-# This workflow deploys the infrastructure using Terraform
+# Simple workflow: Plan on push, Apply on merge with manual approval
 
 name: 'Infrastructure Deployment'
 
@@ -8,12 +8,6 @@ on:
     branches:
       - '**'        # Any branch push triggers plan
       - '!master'   # Except master (since it's protected)
-    paths:
-      - 'infra/terraform/**'
-      - '.github/workflows/infrastructure.yml'
-  pull_request:
-    branches:
-      - master      # PRs to master (for visibility, but plan already ran)
     paths:
       - 'infra/terraform/**'
       - '.github/workflows/infrastructure.yml'
@@ -27,16 +21,8 @@ on:
         options:
           - destroy
 
-env:
-  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-  TF_VAR_database_admin_password: ${{ secrets.TF_VAR_database_admin_password }}
-
 permissions:
   contents: read
-  pull-requests: write
   id-token: write
 
 jobs:
@@ -44,14 +30,21 @@ jobs:
     name: 'Terraform Plan'
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref != 'refs/heads/master'
+    environment: production
+    
+    # Set Terraform environment variables for Service Principal authentication
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_CLI: "false"
+      TF_VAR_database_admin_password: ${{ secrets.TF_VAR_database_admin_password }}
     
     defaults:
       run:
         shell: bash
         working-directory: infra/terraform
-    
-    outputs:
-      tfplanExitCode: ${{ steps.plan.outputs.exitcode }}
     
     steps:
     - name: Checkout
@@ -61,18 +54,6 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ~1.5.0
-        terraform_wrapper: false
-    
-    - name: Configure Azure CLI
-      uses: azure/login@v1
-      with:
-        creds: |
-          {
-            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-          }
     
     - name: Terraform Init
       run: terraform init -backend-config="environments/prod/-backend-config"
@@ -84,117 +65,23 @@ jobs:
       run: terraform validate
     
     - name: Terraform Plan
-      id: plan
       run: |
-        set -e
-        terraform plan \
-          -var-file="environments/prod/terraform.tfvars" \
-          -out=tfplan \
-          -detailed-exitcode || exit_code=$?
-        
-        case $exit_code in
-          0) echo "✅ No changes needed" ;;
-          1) echo "❌ Plan failed"; exit 1 ;;
-          2) echo "📋 Changes planned" ;;
-        esac
-    
-    - name: Upload Terraform Plan
-      uses: actions/upload-artifact@v4
-      with:
-        name: tfplan-${{ github.sha }}
-        path: infra/terraform/tfplan
-        retention-days: 30
-
-  terraform-plan-pr:
-    name: 'Terraform Plan (PR Comment)'
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    
-    defaults:
-      run:
-        shell: bash
-        working-directory: infra/terraform
-    
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ~1.5.0
-        terraform_wrapper: false
-    
-    - name: Configure Azure CLI
-      uses: azure/login@v1
-      with:
-        creds: |
-          {
-            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-          }
-    
-    - name: Terraform Init
-      run: terraform init -backend-config="environments/prod/-backend-config"
-    
-    - name: Terraform Plan for PR
-      id: plan
-      run: |
-        terraform plan \
-          -var-file="environments/prod/terraform.tfvars" \
-          -no-color \
-          -detailed-exitcode || exit_code=$?
-        
-        case $exit_code in
-          0) echo "✅ No changes needed" ;;
-          1) echo "❌ Plan failed"; exit 1 ;;
-          2) echo "📋 Changes planned" ;;
-        esac
-    
-    - name: Update Pull Request
-      uses: actions/github-script@v7
-      env:
-        PLAN: ${{ steps.plan.outputs.stdout }}
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const output = `## Terraform Plan Results 📖
-          
-          #### Status: \`${{ steps.plan.outcome }}\`
-          
-          <details><summary>Show Terraform Plan</summary>
-          
-          \`\`\`terraform
-          ${process.env.PLAN}
-          \`\`\`
-          
-          </details>
-          
-          **Branch:** \`${{ github.head_ref }}\`  
-          **Commit:** \`${{ github.sha }}\`  
-          **Pusher:** @${{ github.actor }}
-          
-          ---
-          > 🚀 **Next Steps:** If the plan looks good, merge this PR to trigger \`terraform apply\`
-          `;
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: output
-          })
+        terraform plan -var-file="environments/prod/terraform.tfvars"
 
   terraform-apply:
     name: 'Terraform Apply'
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'push' && 
-      github.ref == 'refs/heads/master' && 
-      contains(github.event.head_commit.message, 'Merge pull request')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     environment: production
+    
+    # Set Terraform environment variables for Service Principal authentication
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_CLI: "false"
+      TF_VAR_database_admin_password: ${{ secrets.TF_VAR_database_admin_password }}
     
     defaults:
       run:
@@ -209,49 +96,34 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ~1.5.0
-        terraform_wrapper: false
-    
-    - name: Configure Azure CLI
-      uses: azure/login@v1
-      with:
-        creds: |
-          {
-            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-          }
     
     - name: Terraform Init
       run: terraform init -backend-config="environments/prod/-backend-config"
+    
+    - name: Show Plan (for approval)
+      run: |
+        echo "🔍 Showing plan for manual approval..."
+        terraform plan -var-file="environments/prod/terraform.tfvars"
     
     - name: Terraform Apply
       run: |
-        set -e
-        terraform plan \
-          -var-file="environments/prod/terraform.tfvars" \
-          -out=tfplan
-        terraform apply -auto-approve tfplan
-    
-    - name: Output Important Information
-      run: |
-        echo "## 🚀 Infrastructure Deployment Complete" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Key Outputs:" >> $GITHUB_STEP_SUMMARY
-        echo "- **API Endpoint:** $(terraform output -raw api_endpoint)" >> $GITHUB_STEP_SUMMARY
-        echo "- **Frontend URL:** $(terraform output -raw frontend_url)" >> $GITHUB_STEP_SUMMARY
-        echo "- **Resource Group:** $(terraform output -raw resource_group_name)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
-        echo "1. Deploy application code to Container Apps" >> $GITHUB_STEP_SUMMARY
-        echo "2. Deploy frontend to Static Web Apps" >> $GITHUB_STEP_SUMMARY
-        echo "3. Run database migrations" >> $GITHUB_STEP_SUMMARY
+        echo "🚀 Applying infrastructure changes..."
+        terraform apply -var-file="environments/prod/terraform.tfvars" -auto-approve
 
   terraform-destroy:
     name: 'Terraform Destroy'
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
     environment: production
+    
+    # Set Terraform environment variables for Service Principal authentication
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_CLI: "false"
+      TF_VAR_database_admin_password: ${{ secrets.TF_VAR_database_admin_password }}
     
     defaults:
       run:
@@ -266,32 +138,16 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ~1.5.0
-        terraform_wrapper: false
-    
-    - name: Configure Azure CLI
-      uses: azure/login@v1
-      with:
-        creds: |
-          {
-            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-          }
     
     - name: Terraform Init
       run: terraform init -backend-config="environments/prod/-backend-config"
     
+    - name: Show Destroy Plan (for approval)
+      run: |
+        echo "🔍 Showing destroy plan for manual approval..."
+        terraform plan -destroy -var-file="environments/prod/terraform.tfvars"
+    
     - name: Terraform Destroy
       run: |
-        set -e
-        terraform plan \
-          -var-file="environments/prod/terraform.tfvars" \
-          -destroy \
-          -out=destroy-plan
-        terraform apply -auto-approve destroy-plan
-    
-    - name: Output Destruction Summary
-      run: |
-        echo "## ⚠️ Infrastructure Destroyed" >> $GITHUB_STEP_SUMMARY
-        echo "All Azure resources have been destroyed." >> $GITHUB_STEP_SUMMARY
+        echo "💥 Destroying infrastructure..."
+        terraform destroy -var-file="environments/prod/terraform.tfvars" -auto-approve

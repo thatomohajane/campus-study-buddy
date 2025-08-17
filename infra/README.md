@@ -21,7 +21,7 @@ This repository contains the complete Azure infrastructure setup for the Campus 
 - Azure CLI installed and authenticated
 - Terraform >= 1.5.0
 - Azure subscription with Contributor access
-- GitHub repository with branch protection rules enabled
+- GitHub repository with production environment configured
 
 ## 🔧 Local Development
 
@@ -33,7 +33,7 @@ cd infra/terraform
 terraform init -backend-config="environments/prod/-backend-config"
 
 # Plan deployment (validation only)
-terraform plan -var-file="environments/prod/terraform.tfvars" -var="database_admin_password=YOUR_PASSWORD"
+terraform plan -var-file="environments/prod/terraform.tfvars"
 
 # Format and validate code
 terraform fmt -recursive
@@ -44,7 +44,7 @@ terraform validate
 
 **Production deployments happen via GitHub Actions only!**
 
-### Modern CI/CD Workflow:
+### Simple CI/CD Workflow:
 
 1. **Create feature branch** from `master`
    ```bash
@@ -57,29 +57,30 @@ terraform validate
    git commit -m "feat: update infrastructure configuration"
    ```
 
-3. **Push branch** → Automatically triggers `terraform plan`
+3. **Push branch** → Automatically triggers `terraform plan` ✅
    ```bash
    git push origin feature/infrastructure-update
    ```
 
-4. **Check GitHub Actions** - Plan must pass ✅ before proceeding
+4. **Check GitHub Actions** - Plan validates your changes
    - View results in GitHub Actions tab
-   - Plan validates configuration and shows changes
+   - Plan shows what infrastructure changes will be made
 
-5. **Create Pull Request** → Shows plan results in PR comments
-   - Plan results are automatically posted to PR
-   - Team can review proposed infrastructure changes
+5. **Create Pull Request** and get team review
+   - Standard code review process
+   - Team reviews proposed infrastructure changes
 
-6. **Merge after approval** → Automatically triggers `terraform apply`
-   - Only possible if plan validation passed
-   - Deploys changes to production Azure environment
+6. **Merge to master** → Triggers `terraform apply` with **manual approval**
+   - GitHub pauses and asks for your approval
+   - You review the plan output one final time
+   - Click "Approve and deploy" to proceed
+   - Infrastructure is deployed to Azure
 
-### Safety Features:
-- ✅ **Branch protection** - Plan failures block merge
-- ✅ **Automated validation** - No manual plan/apply steps
-- ✅ **Plan visibility** - Results shown in PR comments
-- ✅ **Environment protection** - Production environment approval required
-- ✅ **Audit trail** - All changes tracked in Git history
+### Key Features:
+- ✅ **Automated validation** - Plan runs on every feature branch push
+- ✅ **Manual approval gate** - Human confirmation before any deployment
+- ✅ **Environment protection** - All secrets managed in production environment
+- ✅ **Emergency destroy** - Manual workflow for infrastructure cleanup
 
 ## 📁 Structure
 
@@ -113,54 +114,35 @@ infra/
 1. **Create feature branch** from `master`
 2. **Make infrastructure changes** 
 3. **Push branch** → `terraform plan` runs automatically
-4. **Verify plan passes** ✅ in GitHub Actions
-5. **Create Pull Request**
-6. **Review plan output** in PR comments
-7. **Request team approval**
-8. **Merge after approval** → `terraform apply` runs automatically
+4. **Verify plan succeeds** ✅ in GitHub Actions
+5. **Create Pull Request** for team review
+6. **Merge after approval** → `terraform apply` waits for manual approval
+7. **Approve deployment** → Infrastructure deployed to Azure
 
-### Emergency Operations:
+### Manual Operations:
 
 **Destroy Infrastructure** (Emergency Only):
 - Go to **Actions** → **Infrastructure Deployment** → **Run workflow**
 - Select action: `destroy`
-- Requires production environment approval
+- Requires manual approval before execution
 - ⚠️ **WARNING**: This will destroy ALL Azure resources
-
-## 🔐 Security & Best Practices
-
-### Secrets Management:
-- **Sensitive values** → GitHub Secrets (never in code)
-- **Non-sensitive config** → `terraform.tfvars` (committed to repo)
-- **Azure authentication** → Service Principal with least privilege
-- **Key Vault integration** → Application secrets stored securely
-
-### Network Security:
-- **Private endpoints** for database and storage
-- **VNet integration** for Container Apps
-- **Network Security Groups** for traffic control
-- **Least privilege access** with managed identities
-
-### Cost Optimization:
-- **Free tier services** where possible (Web PubSub, Static Web Apps)
-- **Flexible server** for PostgreSQL (cost-effective)
-- **Local redundant storage** to minimize costs
-- **Auto-scaling** with minimum 0 replicas
 
 ## 🚨 Important Notes
 
+### The Simple Rules:
+1. **Push feature branch** → Plan validates automatically
+2. **Merge to master** → Apply waits for your approval
+3. **Manual destroy only** → Via workflow dispatch
+
 ### DO NOT:
 - ❌ Deploy production infrastructure locally
-- ❌ Commit sensitive values to repository
+- ❌ Store secrets in repository (use environment only)
 - ❌ Bypass the GitHub Actions workflow
 - ❌ Push directly to `master` branch
-- ❌ Run manual `terraform apply` in production
 
 ### DO:
 - ✅ Use the GitHub Actions workflow for all deployments
 - ✅ Test infrastructure changes in feature branches
-- ✅ Review plan output before merging
-- ✅ Use Azure Key Vault for application secrets
-- ✅ Follow the branch protection workflow
-
-**Questions?** Check the GitHub Actions logs or create an issue in this repository.
+- ✅ Review plan output before approving deployment
+- ✅ Use production environment for all secrets
+- ✅ Follow the manual approval process
