@@ -6,26 +6,25 @@ name: 'Infrastructure Deployment'
 on:
   push:
     branches:
-      - master
+      - '**'        # Any branch push triggers plan
+      - '!master'   # Except master (since it's protected)
     paths:
       - 'infra/terraform/**'
       - '.github/workflows/infrastructure.yml'
   pull_request:
     branches:
-      - master
+      - master      # PRs to master (for visibility, but plan already ran)
     paths:
       - 'infra/terraform/**'
       - '.github/workflows/infrastructure.yml'
   workflow_dispatch:
     inputs:
       action:
-        description: 'Action to perform'
+        description: 'Destroy infrastructure'
         required: true
-        default: 'plan'
+        default: 'destroy'
         type: choice
         options:
-          - plan
-          - apply
           - destroy
 
 env:
@@ -44,7 +43,7 @@ jobs:
   terraform-plan:
     name: 'Terraform Plan'
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'plan')
+    if: github.event_name == 'push' && github.ref != 'refs/heads/master'
     
     defaults:
       run:
@@ -84,79 +83,32 @@ jobs:
     - name: Terraform Validate
       run: terraform validate
     
-    # TEMPORARY DEBUG STEP: This step is for troubleshooting the terraform.tfvars issue.
-    # Remove this step once the terraform.tfvars issue is resolved.
-    - name: Debug - List files
-      run: |
-        echo "Current directory:"
-        pwd
-        echo "Files in current directory:"
-        ls -la
-        echo "Files in environments/prod:"
-        ls -la environments/prod/
-        echo "Check if terraform.tfvars exists:"
-        test -f environments/prod/terraform.tfvars && echo "File exists" || echo "File does not exist"
-    
     - name: Terraform Plan
       id: plan
       run: |
+        set -e
         terraform plan \
           -var-file="environments/prod/terraform.tfvars" \
           -out=tfplan \
-          -detailed-exitcode
-      continue-on-error: true
-    
-    - name: Update Pull Request
-      uses: actions/github-script@v7
-      if: github.event_name == 'pull_request'
-      env:
-        PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-          #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-          #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-          #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-          
-          <details><summary>Show Plan</summary>
-          
-          \`\`\`terraform
-          ${process.env.PLAN}
-          \`\`\`
-          
-          </details>
-          
-          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: output
-          })
+          -detailed-exitcode || exit_code=$?
+        
+        case $exit_code in
+          0) echo "✅ No changes needed" ;;
+          1) echo "❌ Plan failed"; exit 1 ;;
+          2) echo "📋 Changes planned" ;;
+        esac
     
     - name: Upload Terraform Plan
       uses: actions/upload-artifact@v4
       with:
-        name: tfplan
+        name: tfplan-${{ github.sha }}
         path: infra/terraform/tfplan
-        retention-days: 5
+        retention-days: 30
 
-  terraform-apply:
-    name: 'Terraform Apply'
-    if: |
-      (github.ref == 'refs/heads/master' && github.event_name == 'push') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+  terraform-plan-pr:
+    name: 'Terraform Plan (PR Comment)'
     runs-on: ubuntu-latest
-    environment: production
-    
-    env:
-      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      TF_VAR_database_admin_password: ${{ secrets.TF_VAR_database_admin_password }}
+    if: github.event_name == 'pull_request'
     
     defaults:
       run:
@@ -171,6 +123,93 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ~1.5.0
+        terraform_wrapper: false
+    
+    - name: Configure Azure CLI
+      uses: azure/login@v1
+      with:
+        creds: |
+          {
+            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+          }
+    
+    - name: Terraform Init
+      run: terraform init -backend-config="environments/prod/-backend-config"
+    
+    - name: Terraform Plan for PR
+      id: plan
+      run: |
+        terraform plan \
+          -var-file="environments/prod/terraform.tfvars" \
+          -no-color \
+          -detailed-exitcode || exit_code=$?
+        
+        case $exit_code in
+          0) echo "✅ No changes needed" ;;
+          1) echo "❌ Plan failed"; exit 1 ;;
+          2) echo "📋 Changes planned" ;;
+        esac
+    
+    - name: Update Pull Request
+      uses: actions/github-script@v7
+      env:
+        PLAN: ${{ steps.plan.outputs.stdout }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const output = `## Terraform Plan Results 📖
+          
+          #### Status: \`${{ steps.plan.outcome }}\`
+          
+          <details><summary>Show Terraform Plan</summary>
+          
+          \`\`\`terraform
+          ${process.env.PLAN}
+          \`\`\`
+          
+          </details>
+          
+          **Branch:** \`${{ github.head_ref }}\`  
+          **Commit:** \`${{ github.sha }}\`  
+          **Pusher:** @${{ github.actor }}
+          
+          ---
+          > 🚀 **Next Steps:** If the plan looks good, merge this PR to trigger \`terraform apply\`
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+  terraform-apply:
+    name: 'Terraform Apply'
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' && 
+      github.ref == 'refs/heads/master' && 
+      contains(github.event.head_commit.message, 'Merge pull request')
+    environment: production
+    
+    defaults:
+      run:
+        shell: bash
+        working-directory: infra/terraform
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ~1.5.0
+        terraform_wrapper: false
     
     - name: Configure Azure CLI
       uses: azure/login@v1
@@ -188,6 +227,7 @@ jobs:
     
     - name: Terraform Apply
       run: |
+        set -e
         terraform plan \
           -var-file="environments/prod/terraform.tfvars" \
           -out=tfplan
@@ -213,13 +253,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     
-    env:
-      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      TF_VAR_database_admin_password: ${{ secrets.TF_VAR_database_admin_password }}
-    
     defaults:
       run:
         shell: bash
@@ -233,6 +266,7 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ~1.5.0
+        terraform_wrapper: false
     
     - name: Configure Azure CLI
       uses: azure/login@v1
@@ -250,6 +284,7 @@ jobs:
     
     - name: Terraform Destroy
       run: |
+        set -e
         terraform plan \
           -var-file="environments/prod/terraform.tfvars" \
           -destroy \
