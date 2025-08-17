@@ -39,7 +39,7 @@ variable "application_name" {
 }
 
 variable "frontend_hostname" {
-  description = "The hostname of the frontend application"
+  description = "The hostname of the frontend application (e.g., app.example.com)"
   type        = string
   default     = "localhost:3000"
 }
@@ -56,7 +56,7 @@ variable "sign_in_audience" {
 
 # Dependencies
 variable "key_vault_id" {
-  description = "The ID of the Key Vault"
+  description = "The ID of the Key Vault to store secrets"
   type        = string
 }
 
@@ -71,4 +71,10 @@ variable "b2c_signin_policy" {
   description = "The B2C sign-in policy name"
   type        = string
   default     = "signupsignin"
+}
+
+variable "enable_azure_ad_groups" {
+  description = "Enable Azure AD group creation (requires Directory.ReadWrite.All permission)"
+  type        = bool
+  default     = false
 }

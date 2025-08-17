@@ -159,18 +159,17 @@ resource "azurerm_container_app" "api" {
 # STATIC WEB APP
 # ==============================================================================
 
+# Static Web App - Use supported region
 resource "azurerm_static_web_app" "frontend" {
   name                = "${var.naming_prefix}-frontend"
   resource_group_name = var.resource_group_name
-  location            = var.location
-  sku_tier            = var.static_web_app_sku_tier
-  sku_size            = var.static_web_app_sku_tier
-
-  app_settings = {
-    "REACT_APP_API_URL"     = var.api_base_url
-    "REACT_APP_ENVIRONMENT" = var.environment
-  }
-
+  
+  # Fixed: Use region that supports Static Web Apps
+  location = "West Europe"  # Hardcode supported region for Static Web Apps
+  
+  sku_tier = "Free"
+  sku_size = "Free"
+  
   tags = var.tags
 }
 

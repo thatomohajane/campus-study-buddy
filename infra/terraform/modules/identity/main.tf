@@ -202,36 +202,24 @@ resource "azurerm_key_vault_secret" "b2c_policy_name" {
 
 # Students group
 resource "azuread_group" "students" {
+  count            = var.enable_azure_ad_groups ? 1 : 0
   display_name     = "${var.naming_prefix}-students"
-  mail_nickname    = "${replace(var.naming_prefix, "-", "")}students"
-  owners           = [data.azuread_client_config.current.object_id]
+  description      = "Students group for Campus Study Buddy"
   security_enabled = true
-  mail_enabled     = true
-  description      = "Group for student users in Campus Study Buddy"
-
-  types = ["Unified"]
 }
 
 # Tutors group
 resource "azuread_group" "tutors" {
+  count            = var.enable_azure_ad_groups ? 1 : 0
   display_name     = "${var.naming_prefix}-tutors"
-  mail_nickname    = "${replace(var.naming_prefix, "-", "")}tutors"
-  owners           = [data.azuread_client_config.current.object_id]
+  description      = "Tutors group for Campus Study Buddy"
   security_enabled = true
-  mail_enabled     = true
-  description      = "Group for tutor users in Campus Study Buddy"
-
-  types = ["Unified"]
 }
 
 # Admins group
 resource "azuread_group" "admins" {
+  count            = var.enable_azure_ad_groups ? 1 : 0
   display_name     = "${var.naming_prefix}-admins"
-  mail_nickname    = "${replace(var.naming_prefix, "-", "")}admins"
-  owners           = [data.azuread_client_config.current.object_id]
+  description      = "Administrators group for Campus Study Buddy"
   security_enabled = true
-  mail_enabled     = true
-  description      = "Group for admin users in Campus Study Buddy"
-
-  types = ["Unified"]
 }

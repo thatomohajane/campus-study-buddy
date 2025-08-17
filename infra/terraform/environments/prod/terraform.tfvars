@@ -1,43 +1,70 @@
-# Production Environment Configuration
-# This file contains environment-specific variables for the production environment
+# Campus Study Buddy - Production Environment Configuration
 
+# ==============================================================================
+# BASIC CONFIGURATION
+# ==============================================================================
+environment = "prod"
 project_name = "campus-study-buddy"
-environment  = "prod"
-location     = "South Africa North"
 
-# Resource sizing for production
-database_sku_name                = "" # empty => using Postgres flexible server
-database_max_size_gb             = 20
-storage_account_tier             = "Standard"
-storage_account_replication_type = "LRS" # keep local redundant to avoid extra costs
-static_web_app_sku_tier          = "Free"
-web_pubsub_sku                   = "Free_F1"
+# Fixed: Shorter naming prefix to avoid length issues
+naming_prefix = "csb-prod"
 
-# Container Apps configuration (keep conservative to stay within free/min-cost)
-container_apps_cpu_limit    = "0.25"
-container_apps_memory_limit = "512Mi"
-container_apps_min_replicas = 0
-container_apps_max_replicas = 2
+# Fixed: Use supported region for Static Web Apps
+location = "westeurope"
 
-# Network configuration - Optimized for small-scale application
-vnet_address_space                     = ["10.0.0.0/24"]  # 256 IPs total - plenty for small app
-database_subnet_address_prefixes       = ["10.0.0.0/28"]  # 16 IPs - more than enough for 1 DB
-container_apps_subnet_address_prefixes = ["10.0.0.16/28"] # 16 IPs - enough for 2 replicas + buffer
-storage_subnet_address_prefixes        = ["10.0.0.32/28"] # 16 IPs - enough for private endpoints
+# Generate random suffix for unique naming
+random_suffix = "6xlaji5u"
 
-# Key Vault configuration
-# Keep soft-delete retention to the minimum allowed so key vaults become purgeable sooner during testing
-key_vault_soft_delete_retention_days = 7 # Minimum retention to allow faster purge during tests
+# ==============================================================================
+# IDENTITY CONFIGURATION
+# ==============================================================================
+application_name = "Campus Study Buddy"
+frontend_hostname = "campus-study-buddy.azurestaticapps.net"
+b2c_tenant_name = "campusstudybuddy"
+b2c_signin_policy = "signupsignin"
+enable_azure_ad_groups = false
 
-# B2C Configuration for student authentication
-b2c_tenant_name   = "studybuddy"   # Creates studybuddy.onmicrosoft.com
-b2c_signin_policy = "signupsignin" # B2C_1_signupsignin policy
+# ==============================================================================
+# NETWORKING CONFIGURATION  
+# ==============================================================================
+vnet_address_space = ["10.0.0.0/16"]
+database_subnet_address_prefixes = ["10.0.1.0/24"]
+compute_subnet_address_prefixes = ["10.0.2.0/24"]
+storage_subnet_address_prefixes = ["10.0.3.0/24"]
 
-# Common tags for production environment
+# ==============================================================================
+# DATABASE CONFIGURATION
+# ==============================================================================
+database_admin_username = "sqladmin"
+database_sku_name = "Basic"
+database_max_size_gb = 2
+create_managed_db = true
+enable_sql_database = true
+
+# ==============================================================================
+# COMPUTE CONFIGURATION
+# ==============================================================================
+container_app_min_replicas = 0
+container_app_max_replicas = 10
+
+# ==============================================================================
+# STORAGE CONFIGURATION
+# ==============================================================================
+storage_account_tier = "Standard"
+storage_account_replication_type = "LRS"
+
+# ==============================================================================
+# SECURITY CONFIGURATION
+# ==============================================================================
+enable_private_endpoints = true
+allowed_ip_ranges = ["0.0.0.0/0"]
+
+# ==============================================================================
+# TAGS
+# ==============================================================================
 tags = {
-  Environment = "Production"
+  Environment = "production"
   Project     = "campus-study-buddy"
-  Owner       = "DevOps"
   ManagedBy   = "terraform"
-  Purpose     = "Production environment for campus study buddy application"
+  Owner       = "development-team"
 }
