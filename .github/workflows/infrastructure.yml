@@ -30,7 +30,16 @@ jobs:
     name: 'Terraform Plan'
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref != 'refs/heads/master'
-    environment: production  # Plan also uses production environment (but no manual approval needed)
+    environment: production
+    
+    # Set Terraform environment variables for Service Principal authentication
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_CLI: "false"
+      TF_VAR_database_admin_password: ${{ secrets.TF_VAR_database_admin_password }}
     
     defaults:
       run:
@@ -45,17 +54,6 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ~1.5.0
-    
-    - name: Configure Azure CLI
-      uses: azure/login@v1
-      with:
-        creds: |
-          {
-            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-          }
     
     - name: Terraform Init
       run: terraform init -backend-config="environments/prod/-backend-config"
@@ -74,7 +72,16 @@ jobs:
     name: 'Terraform Apply'
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    environment: production  # Uses production environment secrets + manual approval
+    environment: production
+    
+    # Set Terraform environment variables for Service Principal authentication
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_CLI: "false"
+      TF_VAR_database_admin_password: ${{ secrets.TF_VAR_database_admin_password }}
     
     defaults:
       run:
@@ -89,17 +96,6 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ~1.5.0
-    
-    - name: Configure Azure CLI
-      uses: azure/login@v1
-      with:
-        creds: |
-          {
-            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-          }
     
     - name: Terraform Init
       run: terraform init -backend-config="environments/prod/-backend-config"
@@ -118,7 +114,16 @@ jobs:
     name: 'Terraform Destroy'
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
-    environment: production  # Uses production environment secrets + manual approval
+    environment: production
+    
+    # Set Terraform environment variables for Service Principal authentication
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_CLI: "false"
+      TF_VAR_database_admin_password: ${{ secrets.TF_VAR_database_admin_password }}
     
     defaults:
       run:
@@ -133,17 +138,6 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ~1.5.0
-    
-    - name: Configure Azure CLI
-      uses: azure/login@v1
-      with:
-        creds: |
-          {
-            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-          }
     
     - name: Terraform Init
       run: terraform init -backend-config="environments/prod/-backend-config"
