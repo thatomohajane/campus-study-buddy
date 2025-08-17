@@ -163,13 +163,13 @@ resource "azurerm_container_app" "api" {
 resource "azurerm_static_web_app" "frontend" {
   name                = "${var.naming_prefix}-frontend"
   resource_group_name = var.resource_group_name
-  
+
   # Fixed: Use region that supports Static Web Apps
-  location = "West Europe"  # Hardcode supported region for Static Web Apps
-  
+  location = "West Europe" # Hardcode supported region for Static Web Apps
+
   sku_tier = "Free"
   sku_size = "Free"
-  
+
   tags = var.tags
 }
 

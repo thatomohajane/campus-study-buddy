@@ -112,9 +112,9 @@ variable "database_sku_name" {
   description = "The SKU name for the SQL database"
   type        = string
   default     = "Basic"
-  
+
   validation {
-    condition = contains(["Basic", "S0", "S1", "S2", "S3", "P1", "P2", "P4", "P6", "P11", "P15"], var.database_sku_name)
+    condition     = contains(["Basic", "S0", "S1", "S2", "S3", "P1", "P2", "P4", "P6", "P11", "P15"], var.database_sku_name)
     error_message = "Database SKU must be a valid Azure SQL Database SKU."
   }
 }
