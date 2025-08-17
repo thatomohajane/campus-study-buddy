@@ -84,6 +84,8 @@ jobs:
     - name: Terraform Validate
       run: terraform validate
     
+    # TEMPORARY DEBUG STEP: This step is for troubleshooting the terraform.tfvars issue.
+    # Remove this step once the terraform.tfvars issue is resolved.
     - name: Debug - List files
       run: |
         echo "Current directory:"
