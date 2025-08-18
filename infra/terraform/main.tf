@@ -77,10 +77,10 @@ module "compute" {
   app_service_plan_sku = var.app_service_plan_sku
 
   # Key Vault secret IDs (depends on core and communication modules)
-  database_connection_secret_id     = module.core.database_connection_secret_id
-  jwt_secret_id                     = module.core.jwt_secret_id
-  storage_connection_secret_id      = module.core.storage_connection_secret_id  
-  web_pubsub_connection_secret_id   = module.communication.web_pubsub_connection_secret_id
+  database_connection_secret_id   = module.core.database_connection_secret_id
+  jwt_secret_id                   = module.core.jwt_secret_id
+  storage_connection_secret_id    = module.core.storage_connection_secret_id
+  web_pubsub_connection_secret_id = module.communication.web_pubsub_connection_secret_id
 
   depends_on = [module.core, module.communication]
 }

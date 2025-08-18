@@ -85,7 +85,7 @@ variable "key_vault_soft_delete_retention_days" {
   description = "Number of days to retain soft-deleted Key Vault items"
   type        = number
   default     = 7
-  
+
   validation {
     condition     = var.key_vault_soft_delete_retention_days >= 7 && var.key_vault_soft_delete_retention_days <= 90
     error_message = "Key Vault soft delete retention days must be between 7 and 90."

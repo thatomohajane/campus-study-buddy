@@ -14,9 +14,9 @@
 # Container Apps Environment - using 'cae' abbreviation per Azure CAF
 resource "azurerm_container_app_environment" "main" {
   # Format: {project}-{env}-cae-{location}-{suffix}
-  name = "${var.naming_prefix}-cae-${var.location_abbrev}-${var.random_suffix}"
+  name                     = "${var.naming_prefix}-cae-${var.location_abbrev}-${var.random_suffix}"
   resource_group_name      = var.resource_group_name
-  location                = var.location
+  location                 = var.location
   infrastructure_subnet_id = var.subnet_id
 
   tags = var.common_tags
@@ -64,7 +64,7 @@ resource "azurerm_container_app" "api" {
   name                         = "${var.naming_prefix}-ca-api-${var.random_suffix}"
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = var.resource_group_name
-  revision_mode               = "Single"
+  revision_mode                = "Single"
 
   template {
     # Free tier optimization: Scale to 0 when idle
@@ -73,7 +73,7 @@ resource "azurerm_container_app" "api" {
 
     container {
       name   = "api"
-      image  = var.api_container_image # Node.js Express API
+      image  = var.api_container_image         # Node.js Express API
       cpu    = var.container_apps_cpu_limit    # 0.25 for free tier
       memory = var.container_apps_memory_limit # 0.5Gi for free tier
 
@@ -144,9 +144,9 @@ resource "azurerm_container_app" "api" {
   # External access configuration
   ingress {
     allow_insecure_connections = false
-    external_enabled          = true
-    target_port               = 3000
-    transport                 = "http"
+    external_enabled           = true
+    target_port                = 3000
+    transport                  = "http"
 
     traffic_weight {
       percentage      = 100
@@ -197,11 +197,11 @@ resource "azurerm_service_plan" "frontend" {
   name                = "${var.naming_prefix}-plan-frontend-${var.random_suffix}"
   resource_group_name = var.resource_group_name
   location            = var.location
-  
+
   # Free tier configuration
   os_type  = "Linux"
   sku_name = var.app_service_plan_sku # This should be "F1" for free tier
-  
+
   tags = var.common_tags
 }
 
@@ -218,11 +218,11 @@ resource "azurerm_linux_web_app" "frontend" {
     application_stack {
       node_version = "18-lts"
     }
-    
+
     # Enable health check
-    health_check_path = "/"
+    health_check_path                 = "/"
     health_check_eviction_time_in_min = 2
-    
+
     # Always on disabled for free tier
     always_on = false
   }

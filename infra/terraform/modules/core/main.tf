@@ -22,32 +22,32 @@ data "azurerm_client_config" "current" {}
 resource "azurerm_storage_account" "main" {
   # Format: {project}{env}st{location}{suffix} (max 24 chars, lowercase alphanumeric)
   name = substr(
-    lower(replace("${var.project_abbrev}${var.env_abbrev}st${var.location_abbrev}${var.random_suffix}", "-", "")), 
+    lower(replace("${var.project_abbrev}${var.env_abbrev}st${var.location_abbrev}${var.random_suffix}", "-", "")),
     0, 24
   )
   resource_group_name = var.resource_group_name
-  location           = var.location
-  
+  location            = var.location
+
   # Free tier configuration
-  account_tier             = var.storage_account_tier       # Standard
+  account_tier             = var.storage_account_tier             # Standard
   account_replication_type = var.storage_account_replication_type # LRS
-  
+
   # Security hardening
   allow_nested_items_to_be_public = false
   shared_access_key_enabled       = true
   public_network_access_enabled   = true
-  
+
   # Blob properties for security
   blob_properties {
     delete_retention_policy {
       days = 7
     }
-    
+
     container_delete_retention_policy {
       days = 7
     }
   }
-  
+
   tags = var.common_tags
 }
 
@@ -83,20 +83,20 @@ resource "azurerm_key_vault" "main" {
     0, 24
   )
   resource_group_name = var.resource_group_name
-  location           = var.location
-  tenant_id          = data.azurerm_client_config.current.tenant_id
-  
+  location            = var.location
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+
   # Standard SKU for free tier
   sku_name = "standard"
-  
+
   # Security configuration
   soft_delete_retention_days = var.key_vault_soft_delete_retention_days
   purge_protection_enabled   = false # Set to true for production
   enable_rbac_authorization  = true
-  
+
   # Network access (public for free tier, private endpoints cost extra)
   public_network_access_enabled = true
-  
+
   tags = var.common_tags
 }
 
@@ -115,11 +115,11 @@ resource "azurerm_role_assignment" "current_user_kv_admin" {
 # Configured within free tier limits
 resource "azurerm_mssql_server" "main" {
   count = var.create_managed_db ? 1 : 0
-  
+
   # Format: {project}-{env}-sql-{location}-{suffix}
-  name = "${var.naming_prefix}-sql-${var.location_abbrev}-${var.random_suffix}"
+  name                = "${var.naming_prefix}-sql-${var.location_abbrev}-${var.random_suffix}"
   resource_group_name = var.resource_group_name
-  location           = var.location
+  location            = var.location
 
   # Authentication
   administrator_login          = var.database_admin_username
@@ -127,7 +127,7 @@ resource "azurerm_mssql_server" "main" {
 
   # Security configuration
   version                       = "12.0"
-  minimum_tls_version          = "1.2"
+  minimum_tls_version           = "1.2"
   public_network_access_enabled = true
 
   tags = var.common_tags
@@ -137,17 +137,17 @@ resource "azurerm_mssql_server" "main" {
 # Configured for free tier (100,000 vCore seconds serverless)
 resource "azurerm_mssql_database" "main" {
   count = var.create_managed_db ? 1 : 0
-  
+
   # Format: {project}-{env}-sqldb-{suffix}
   name      = "${var.naming_prefix}-sqldb-${var.random_suffix}"
   server_id = azurerm_mssql_server.main[0].id
-  
+
   # Free tier configuration - Serverless with auto-pause
   sku_name                    = "GP_S_Gen5_1" # Serverless, 1 vCore
   max_size_gb                 = 32            # Free tier limit
   min_capacity                = 0.5           # Minimum compute
   auto_pause_delay_in_minutes = 60            # Auto-pause after 1 hour
-  
+
   tags = var.common_tags
 }
 
@@ -168,7 +168,7 @@ resource "random_string" "jwt_secret" {
 # Database connection string secret
 resource "azurerm_key_vault_secret" "database_connection_string" {
   count = var.create_managed_db ? 1 : 0
-  
+
   name         = "database-connection-string"
   value        = "Server=tcp:${azurerm_mssql_server.main[0].fully_qualified_domain_name},1433;Database=${azurerm_mssql_database.main[0].name};User Id=${var.database_admin_username};Password=${var.database_admin_password};Encrypt=true;TrustServerCertificate=false;Connection Timeout=30;"
   key_vault_id = azurerm_key_vault.main.id

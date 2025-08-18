@@ -37,7 +37,7 @@ variable "location" {
       "east us", "east us 2", "west us", "west us 2", "central us", "south central us",
       "west europe", "north europe", "southeast asia", "east asia", "south africa north", "south africa west",
       "spain central", "central india", "brazil south", "austria east",
-      "eastus", "eastus2", "westus", "westus2", "centralus", "southcentralus", 
+      "eastus", "eastus2", "westus", "westus2", "centralus", "southcentralus",
       "westeurope", "northeurope", "southeastasia", "eastasia", "southafricanorth", "southafricawest",
       "spaincentral", "centralindia", "brazilsouth", "austriaeast"
     ], lower(var.location))
