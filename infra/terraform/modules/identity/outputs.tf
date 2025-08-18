@@ -53,32 +53,32 @@ output "application_password_value" {
 # Azure AD Groups outputs
 output "students_group_id" {
   description = "The ID of the students group"
-  value       = azuread_group.students.id
+  value       = var.enable_azure_ad_groups ? azuread_group.students[0].id : ""
 }
 
 output "students_group_object_id" {
   description = "The object ID of the students group"
-  value       = azuread_group.students.object_id
+  value       = var.enable_azure_ad_groups ? azuread_group.students[0].object_id : ""
 }
 
 output "tutors_group_id" {
   description = "The ID of the tutors group"
-  value       = azuread_group.tutors.id
+  value       = var.enable_azure_ad_groups ? azuread_group.tutors[0].id : ""
 }
 
 output "tutors_group_object_id" {
   description = "The object ID of the tutors group"
-  value       = azuread_group.tutors.object_id
+  value       = var.enable_azure_ad_groups ? azuread_group.tutors[0].object_id : ""
 }
 
 output "admins_group_id" {
   description = "The ID of the admins group"
-  value       = azuread_group.admins.id
+  value       = var.enable_azure_ad_groups ? azuread_group.admins[0].id : ""
 }
 
 output "admins_group_object_id" {
   description = "The object ID of the admins group"
-  value       = azuread_group.admins.object_id
+  value       = var.enable_azure_ad_groups ? azuread_group.admins[0].object_id : ""
 }
 
 # Tenant information

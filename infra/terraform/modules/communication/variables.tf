@@ -55,3 +55,9 @@ variable "managed_identity_id" {
   type        = string
   default     = null
 }
+
+variable "key_vault_rbac_assignment" {
+  description = "Key Vault RBAC assignment dependency"
+  type        = any
+  default     = null
+}

@@ -13,6 +13,16 @@ variable "location" {
   type        = string
 }
 
+variable "environment" {
+  description = "Environment name (dev, staging, prod)"
+  type        = string
+}
+
+variable "project_name" {
+  description = "Name of the project"
+  type        = string
+}
+
 variable "naming_prefix" {
   description = "Prefix for naming resources"
   type        = string
@@ -71,9 +81,42 @@ variable "enable_sql_database" {
   default     = true
 }
 
+variable "key_vault_soft_delete_retention_days" {
+  description = "Number of days to retain soft-deleted Key Vault items"
+  type        = number
+  default     = 7
+  
+  validation {
+    condition     = var.key_vault_soft_delete_retention_days >= 7 && var.key_vault_soft_delete_retention_days <= 90
+    error_message = "Key Vault soft delete retention days must be between 7 and 90."
+  }
+}
+
 variable "tags" {
   description = "A map of tags to assign to the resources"
   type        = map(string)
   default     = {}
+}
+
+variable "common_tags" {
+  description = "Common tags to apply to all resources"
+  type        = map(string)
+  default     = {}
+}
+
+variable "project_abbrev" {
+  description = "Project abbreviation for naming"
+  type        = string
+  default     = "csb"
+}
+
+variable "env_abbrev" {
+  description = "Environment abbreviation for naming"
+  type        = string
+}
+
+variable "location_abbrev" {
+  description = "Location abbreviation for naming"
+  type        = string
 }
 

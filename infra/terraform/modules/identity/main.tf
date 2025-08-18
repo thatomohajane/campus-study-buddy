@@ -39,7 +39,7 @@ data "azuread_client_config" "current" {}
 resource "azuread_application" "main" {
   display_name     = var.application_name
   owners           = [data.azuread_client_config.current.object_id]
-  sign_in_audience = "AzureADandPersonalMicrosoftAccount" # Required for B2C integration
+  sign_in_audience = "AzureADMyOrg" # Change to single tenant for simplicity
 
   # API configuration for B2C
   api {
@@ -146,7 +146,7 @@ resource "azuread_service_principal" "main" {
 # ==============================================================================
 
 resource "azuread_application_password" "main" {
-  application_id = azuread_application.main.client_id
+  application_id = azuread_application.main.id
   display_name   = "Terraform Managed Secret"
   end_date       = timeadd(timestamp(), "8760h") # 1 year from now
 }
@@ -158,6 +158,8 @@ resource "azurerm_key_vault_secret" "client_secret" {
   key_vault_id = var.key_vault_id
 
   tags = var.tags
+
+  depends_on = [var.key_vault_rbac_assignment]
 }
 
 # Store client ID in Key Vault
@@ -167,6 +169,8 @@ resource "azurerm_key_vault_secret" "client_id" {
   key_vault_id = var.key_vault_id
 
   tags = var.tags
+
+  depends_on = [var.key_vault_rbac_assignment]
 }
 
 # Store tenant ID in Key Vault
@@ -176,6 +180,8 @@ resource "azurerm_key_vault_secret" "tenant_id" {
   key_vault_id = var.key_vault_id
 
   tags = var.tags
+
+  depends_on = [var.key_vault_rbac_assignment]
 }
 
 # Store B2C tenant domain in Key Vault
@@ -185,6 +191,8 @@ resource "azurerm_key_vault_secret" "b2c_tenant_domain" {
   key_vault_id = var.key_vault_id
 
   tags = var.tags
+
+  depends_on = [var.key_vault_rbac_assignment]
 }
 
 # Store B2C policy name in Key Vault
@@ -194,6 +202,8 @@ resource "azurerm_key_vault_secret" "b2c_policy_name" {
   key_vault_id = var.key_vault_id
 
   tags = var.tags
+
+  depends_on = [var.key_vault_rbac_assignment]
 }
 
 # ==============================================================================

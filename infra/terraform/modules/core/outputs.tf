@@ -77,6 +77,25 @@ output "key_vault_uri" {
   value       = azurerm_key_vault.main.vault_uri
 }
 
+# Key Vault Secret IDs
+output "jwt_secret_id" {
+  description = "The Key Vault secret ID for JWT secret"
+  value       = azurerm_key_vault_secret.jwt_secret.id
+  sensitive   = true
+}
+
+output "storage_connection_secret_id" {
+  description = "The Key Vault secret ID for storage connection string"
+  value       = azurerm_key_vault_secret.storage_connection_string.id
+  sensitive   = true
+}
+
+# Key Vault RBAC assignment output for module dependencies
+output "key_vault_rbac_assignment" {
+  description = "The Key Vault RBAC assignment resource for dependency management"
+  value       = azurerm_role_assignment.current_user_kv_admin
+}
+
 /* Log Analytics and Application Insights outputs removed to avoid paid telemetry.
   If you need these later, re-add them carefully and consider budget alerts.
 */

@@ -75,3 +75,16 @@ output "notification_hub_id" {
 
 # Communication Service outputs
 // Azure Communication Service removed to avoid paid SMS/email features. Use external providers if needed.
+
+# Key Vault Secret IDs
+output "web_pubsub_connection_secret_id" {
+  description = "The Key Vault secret ID for Web PubSub connection string"
+  value       = azurerm_key_vault_secret.web_pubsub_connection_string.id
+  sensitive   = true
+}
+
+output "web_pubsub_access_key_secret_id" {
+  description = "The Key Vault secret ID for Web PubSub access key"
+  value       = azurerm_key_vault_secret.web_pubsub_access_key.id
+  sensitive   = true
+}

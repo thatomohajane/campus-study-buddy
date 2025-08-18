@@ -38,31 +38,25 @@ output "api_container_app_url" {
   value       = "https://${azurerm_container_app.api.latest_revision_fqdn}"
 }
 
-# Static Web App outputs
-output "static_web_app_name" {
-  description = "The name of the Static Web App"
-  value       = azurerm_static_web_app.frontend.name
+# Frontend App Service outputs
+output "frontend_app_service_name" {
+  description = "The name of the Frontend App Service"
+  value       = azurerm_linux_web_app.frontend.name
 }
 
-output "static_web_app_id" {
-  description = "The ID of the Static Web App"
-  value       = azurerm_static_web_app.frontend.id
+output "frontend_app_service_id" {
+  description = "The ID of the Frontend App Service"
+  value       = azurerm_linux_web_app.frontend.id
 }
 
-output "static_web_app_default_hostname" {
-  description = "The default hostname of the Static Web App"
-  value       = azurerm_static_web_app.frontend.default_host_name
+output "frontend_app_service_default_hostname" {
+  description = "The default hostname of the Frontend App Service"
+  value       = azurerm_linux_web_app.frontend.default_hostname
 }
 
-output "static_web_app_deployment_token" {
-  description = "The deployment token for the Static Web App"
-  value       = azurerm_static_web_app.frontend.api_key
-  sensitive   = true
-}
-
-output "static_web_app_url" {
-  description = "The URL of the Static Web App"
-  value       = "https://${azurerm_static_web_app.frontend.default_host_name}"
+output "frontend_app_service_url" {
+  description = "The URL of the Frontend App Service"
+  value       = "https://${azurerm_linux_web_app.frontend.default_hostname}"
 }
 
 # Managed Identity outputs
@@ -87,7 +81,8 @@ output "container_apps_identity_client_id" {
 }
 
 # Application Gateway outputs (when enabled)
-output "app_gateway_public_ip" {
-  description = "The public IP address of the Application Gateway"
-  value       = azurerm_public_ip.app_gateway.ip_address
-}
+# Note: Application Gateway is not implemented in this configuration
+# output "app_gateway_public_ip" {
+#   description = "The public IP address of the Application Gateway"
+#   value       = azurerm_public_ip.app_gateway.ip_address
+# }

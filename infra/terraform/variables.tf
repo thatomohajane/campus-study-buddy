@@ -31,12 +31,17 @@ variable "location" {
   type        = string
   default     = "East US 2"
 
+  # Accept either human-readable region names or common lowercase provider values
   validation {
     condition = contains([
-      "East US", "East US 2", "West US", "West US 2", "Central US", "South Central US",
-      "West Europe", "North Europe", "Southeast Asia", "East Asia", "South Africa North", "South Africa West"
-    ], var.location)
-    error_message = "Location must be a valid Azure region."
+      "east us", "east us 2", "west us", "west us 2", "central us", "south central us",
+      "west europe", "north europe", "southeast asia", "east asia", "south africa north", "south africa west",
+      "spain central", "central india", "brazil south", "austria east",
+      "eastus", "eastus2", "westus", "westus2", "centralus", "southcentralus", 
+      "westeurope", "northeurope", "southeastasia", "eastasia", "southafricanorth", "southafricawest",
+      "spaincentral", "centralindia", "brazilsouth", "austriaeast"
+    ], lower(var.location))
+    error_message = "Location must be a valid Azure region (case-insensitive). Examples: 'West Europe' or 'westeurope'."
   }
 }
 
@@ -240,6 +245,18 @@ variable "static_web_app_sku_tier" {
     error_message = "Static Web App SKU tier must be either Free or Standard."
   }
 }
+
+# App Service Plan configuration for frontend
+variable "app_service_plan_sku" {
+  description = "The SKU for the App Service Plan (frontend)"
+  type        = string
+  default     = "F1" # Free tier
+
+  validation {
+    condition     = contains(["F1", "D1", "B1", "B2", "B3", "S1", "S2", "S3", "P1", "P2", "P3"], var.app_service_plan_sku)
+    error_message = "App Service Plan SKU must be a valid Azure App Service Plan SKU."
+  }
+}
 # ==============================================================================
 # WEB PUBSUB CONFIGURATION
 # ==============================================================================
@@ -285,4 +302,89 @@ variable "enable_azure_ad_groups" {
   description = "Enable Azure AD group creation (requires Directory.ReadWrite.All permission)"
   type        = bool
   default     = false
+}
+
+variable "azure_subscription_id" {
+  description = "Azure subscription ID to use for provider configuration (falls back to ARM_SUBSCRIPTION_ID env var)"
+  type        = string
+  default     = ""
+}
+
+variable "azure_tenant_id" {
+  description = "Azure tenant ID to use for provider configuration (falls back to ARM_TENANT_ID env var)"
+  type        = string
+  default     = ""
+}
+
+# ------------------------------------------------------------------------------
+# Minimal/compatibility variables declared because environments/prod/terraform.tfvars
+# contains values for them. These are intentionally permissive defaults to avoid
+# breaking existing tfvars-based workflows. If you prefer, remove the keys from
+# the tfvars file instead.
+# ------------------------------------------------------------------------------
+
+variable "frontend_hostname" {
+  description = "Frontend hostname (present in environments/prod/terraform.tfvars)"
+  type        = string
+  default     = ""
+}
+
+variable "application_name" {
+  description = "Name of the Azure AD application"
+  type        = string
+  default     = "Campus Study Buddy"
+}
+
+variable "naming_prefix" {
+  description = "Optional naming prefix used in the prod tfvars"
+  type        = string
+  default     = ""
+}
+
+variable "random_suffix" {
+  description = "Optional random suffix used in the prod tfvars"
+  type        = string
+  default     = ""
+}
+
+variable "create_managed_db" {
+  description = "Compatibility: whether to create a managed database (present in tfvars)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_sql_database" {
+  description = "Compatibility: legacy flag present in tfvars"
+  type        = bool
+  default     = true
+}
+
+variable "compute_subnet_address_prefixes" {
+  description = "Compute subnet prefixes (present in tfvars)"
+  type        = list(string)
+  default     = ["10.0.2.0/24"]
+}
+
+variable "container_app_min_replicas" {
+  description = "Min replicas for container apps (compat)"
+  type        = number
+  default     = 0
+}
+
+variable "container_app_max_replicas" {
+  description = "Max replicas for container apps (compat)"
+  type        = number
+  default     = 10
+}
+
+variable "enable_private_endpoints" {
+  description = "Compatibility flag present in tfvars"
+  type        = bool
+  default     = false
+}
+
+variable "allowed_ip_ranges" {
+  description = "Compatibility: allowed IP ranges"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
 }

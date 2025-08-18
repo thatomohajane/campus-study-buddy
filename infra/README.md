@@ -36,10 +36,6 @@ terraform init -backend-config="environments/prod/-backend-config"
 # Plan deployment (validation only)
 terraform plan -var-file="environments/prod/terraform.tfvars"
 
-# Format and validate code
-terraform fmt -recursive
-terraform validate
-```
 
 ## 🎯 Production Deployment
 
@@ -83,22 +79,14 @@ terraform validate
    gh pr merge --merge
    ```
 
-8. **Manual approval process**:
-   - GitHub pauses deployment for approval
-   - Review terraform plan output
-   - Click **"Review deployments"** → **"Approve and deploy"**
-   - Infrastructure deployed to Azure ✅
-
 ### Workflow Architecture:
 - 🔄 **terraform-plan.yml** - Validation on feature branch push
-- 🚀 **terraform-apply.yml** - Deployment on PR merge (with approval)
-- 💥 **terraform-destroy.yml** - Emergency cleanup (manual only)
+- 🚀 **terraform-apply.yml** - Deployment on PR merge
 
 ### Key Features:
 - ✅ **Branch protection** - No direct pushes to master allowed
 - ✅ **Decoupled workflows** - Each workflow has single responsibility
 - ✅ **PR merge trigger** - Apply only runs when PR is merged to master
-- ✅ **Manual approval gate** - Human confirmation before deployment
 - ✅ **Environment secrets** - All credentials in production environment
 
 ## 📁 Structure
@@ -124,8 +112,7 @@ infra/
 └── .github/
     └── workflows/
         ├── terraform-plan.yml      # Plan workflow (feature branches)
-        ├── terraform-apply.yml     # Apply workflow (PR merge)
-        └── terraform-destroy.yml   # Destroy workflow (manual)
+        └── terraform-apply.yml     # Apply workflow (PR merge)
 ```
 
 ## 🤝 Contributing
@@ -138,16 +125,7 @@ infra/
 4. **Verify plan succeeds** ✅ in GitHub Actions
 5. **Create Pull Request** for team review
 6. **Team approves PR** and merges to master
-7. **PR merge triggers terraform-apply.yml** → Manual approval required
-8. **Approve deployment** → Infrastructure deployed to Azure
-
-### Manual Operations:
-
-**Destroy Infrastructure** (Emergency Only):
-- Go to **Actions** → **Terraform Destroy** → **Run workflow**
-- Type `destroy` to confirm
-- Requires manual approval before execution
-- ⚠️ **WARNING**: This will destroy ALL Azure resources
+8. **Auto-Approve deployment** → Infrastructure deployed to Azure
 
 ## 🔐 Security & Environment Setup
 
@@ -184,20 +162,9 @@ All secrets are stored in the **production environment**:
 - **Trigger**: Pull request merged to `master`
 - **Purpose**: Deploy infrastructure to Azure
 - **Environment**: Uses production environment secrets
-- **Approval**: Manual approval required before apply
-
-### terraform-destroy.yml
-- **Trigger**: Manual workflow dispatch only
-- **Purpose**: Emergency infrastructure cleanup
-- **Environment**: Uses production environment secrets
-- **Approval**: Manual approval + confirmation required
+- **Approval**: Auto-approval apply
 
 ## 🚨 Important Notes
-
-### The Decoupled Rules:
-1. **Push feature branch** → terraform-plan validates
-2. **Merge PR to master** → terraform-apply waits for approval
-3. **Manual destroy only** → Emergency cleanup via workflow dispatch
 
 ### DO NOT:
 - ❌ Deploy production infrastructure locally

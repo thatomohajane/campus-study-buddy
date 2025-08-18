@@ -78,3 +78,9 @@ variable "enable_azure_ad_groups" {
   type        = bool
   default     = false
 }
+
+variable "key_vault_rbac_assignment" {
+  description = "Key Vault RBAC assignment dependency"
+  type        = any
+  default     = null
+}

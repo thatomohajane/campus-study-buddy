@@ -13,7 +13,7 @@
 
 resource "azurerm_logic_app_workflow" "reminder_scheduler" {
   name                = "${var.naming_prefix}-reminder-scheduler"
-  location            = var.location
+  location            = "spaincentral"
   resource_group_name = var.resource_group_name
 
   tags = var.tags
@@ -105,7 +105,7 @@ resource "azurerm_logic_app_action_custom" "send_notification" {
 
 resource "azurerm_logic_app_workflow" "email_notifications" {
   name                = "${var.naming_prefix}-email-notifications"
-  location            = var.location
+  location            = "spaincentral"
   resource_group_name = var.resource_group_name
 
   tags = var.tags

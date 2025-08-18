@@ -26,12 +26,16 @@ module "core" {
   naming_prefix       = local.naming_prefix
   random_suffix       = random_string.suffix.result
   tags                = local.common_tags
+  common_tags         = local.common_tags
+  project_abbrev      = local.project_abbrev
+  env_abbrev          = local.env_abbrev
+  location_abbrev     = local.location_abbrev
 
   # Database configuration
   database_admin_username = var.database_admin_username
   database_admin_password = var.database_admin_password
-  create_managed_db       = true
-  database_sku_name       = "GP_S_Gen5_1" # serverless/general purpose SKU — override via variables.tf if needed
+  create_managed_db       = var.create_managed_db
+  database_sku_name       = var.database_sku_name
   database_max_size_gb    = var.database_max_size_gb
 
   # Storage configuration
@@ -54,6 +58,8 @@ module "compute" {
   naming_prefix       = local.naming_prefix
   random_suffix       = random_string.suffix.result
   tags                = local.common_tags
+  common_tags         = local.common_tags
+  location_abbrev     = local.location_abbrev
 
   # Dependencies
   key_vault_id       = module.core.key_vault_id
@@ -67,8 +73,16 @@ module "compute" {
   container_apps_max_replicas = var.container_apps_max_replicas
   api_container_image         = var.api_container_image
 
-  # Static Web App configuration
-  static_web_app_sku_tier = var.static_web_app_sku_tier
+  # Frontend App Service configuration
+  app_service_plan_sku = var.app_service_plan_sku
+
+  # Key Vault secret IDs (depends on core and communication modules)
+  database_connection_secret_id     = module.core.database_connection_secret_id
+  jwt_secret_id                     = module.core.jwt_secret_id
+  storage_connection_secret_id      = module.core.storage_connection_secret_id  
+  web_pubsub_connection_secret_id   = module.communication.web_pubsub_connection_secret_id
+
+  depends_on = [module.core, module.communication]
 }
 
 // Networking module (VNet, subnets, NSGs, route tables)
@@ -107,7 +121,10 @@ module "communication" {
   web_pubsub_sku = var.web_pubsub_sku
 
   # Ensure Web PubSub secrets are stored in Key Vault
-  key_vault_id = module.core.key_vault_id
+  key_vault_id              = module.core.key_vault_id
+  key_vault_rbac_assignment = module.core.key_vault_rbac_assignment
+
+  depends_on = [module.core]
 }
 
 // Identity and security module (Azure AD app, SP, groups, secrets)
@@ -122,15 +139,18 @@ module "identity" {
   tags                = local.common_tags
 
   # Key Vault reference
-  key_vault_id = module.core.key_vault_id
+  key_vault_id              = module.core.key_vault_id
+  key_vault_rbac_assignment = module.core.key_vault_rbac_assignment
 
   # Application configuration
   application_name  = "${local.naming_prefix}-app"
-  frontend_hostname = module.compute.static_web_app_default_hostname
+  frontend_hostname = module.compute.frontend_app_service_default_hostname
 
   # B2C Configuration
   b2c_tenant_name   = var.b2c_tenant_name
   b2c_signin_policy = var.b2c_signin_policy
+
+  depends_on = [module.core]
 }
 
 // Automation module (Logic Apps, Service Bus, automation monitoring)

@@ -37,6 +37,17 @@ variable "tags" {
   default     = {}
 }
 
+variable "common_tags" {
+  description = "Common tags to apply to all resources"
+  type        = map(string)
+  default     = {}
+}
+
+variable "location_abbrev" {
+  description = "Location abbreviation for naming"
+  type        = string
+}
+
 variable "key_vault_id" {
   description = "The ID of the Key Vault"
   type        = string
@@ -92,6 +103,13 @@ variable "static_web_app_sku_tier" {
   default     = "Free"
 }
 
+# App Service Plan configuration
+variable "app_service_plan_sku" {
+  description = "The SKU for the App Service Plan"
+  type        = string
+  default     = "F1" # Free tier
+}
+
 variable "cors_origin" {
   description = "The allowed CORS origin for the API (frontend host)"
   type        = string
@@ -100,6 +118,31 @@ variable "cors_origin" {
 
 variable "api_base_url" {
   description = "The base URL to expose to the frontend for API calls"
+  type        = string
+  default     = ""
+}
+
+# Key Vault Secret IDs
+variable "database_connection_secret_id" {
+  description = "The Key Vault secret ID for database connection string"
+  type        = string
+  default     = ""
+}
+
+variable "jwt_secret_id" {
+  description = "The Key Vault secret ID for JWT secret"
+  type        = string
+  default     = ""
+}
+
+variable "storage_connection_secret_id" {
+  description = "The Key Vault secret ID for storage connection string"
+  type        = string
+  default     = ""
+}
+
+variable "web_pubsub_connection_secret_id" {
+  description = "The Key Vault secret ID for Web PubSub connection string"
   type        = string
   default     = ""
 }

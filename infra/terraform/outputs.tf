@@ -69,9 +69,9 @@ output "api_container_app_fqdn" {
   value       = module.compute.api_container_app_fqdn
 }
 
-output "static_web_app_default_hostname" {
-  description = "The default hostname of the Static Web App"
-  value       = module.compute.static_web_app_default_hostname
+output "frontend_app_service_default_hostname" {
+  description = "The default hostname of the Frontend App Service"
+  value       = module.compute.frontend_app_service_default_hostname
 }
 
 
@@ -130,7 +130,7 @@ output "api_endpoint" {
 
 output "frontend_url" {
   description = "The frontend application URL"
-  value       = "https://${module.compute.static_web_app_default_hostname}"
+  value       = "https://${module.compute.frontend_app_service_default_hostname}"
 }
 
 

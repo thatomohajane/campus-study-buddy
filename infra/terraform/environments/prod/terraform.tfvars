@@ -1,70 +1,63 @@
 # Campus Study Buddy - Production Environment Configuration
+# Optimized for Azure Free Tier and student use
 
 # ==============================================================================
 # BASIC CONFIGURATION
 # ==============================================================================
-environment  = "prod"
-project_name = "campus-study-buddy"
+environment   = "prod"
+project_name  = "csb" # Campus Study Buddy abbreviated
+location      = "southafricanorth" # Azure for Students supported region
 
-# Fixed: Shorter naming prefix to avoid length issues
-naming_prefix = "csb-prod"
+# ==============================================================================
+# NETWORKING CONFIGURATION (FREE TIER OPTIMIZED)
+# ==============================================================================
+vnet_address_space                     = ["10.0.0.0/16"]
+database_subnet_address_prefixes       = ["10.0.1.0/24"]
+container_apps_subnet_address_prefixes = ["10.0.2.0/23"]   # Container Apps requires /23 minimum
+storage_subnet_address_prefixes        = ["10.0.4.0/24"]
 
-# Fixed: Use supported region for Static Web Apps
-location = "westeurope"
+# ==============================================================================
+# DATABASE CONFIGURATION (FREE TIER)
+# ==============================================================================
+database_admin_username = "csb_admin"
+create_managed_db       = true
+enable_sql_database     = true
 
-# Generate random suffix for unique naming
-random_suffix = "6xlaji5u"
+# ==============================================================================
+# COMPUTE CONFIGURATION (FREE TIER OPTIMIZED)
+# ==============================================================================
+api_container_image        = "node:18-alpine" # Placeholder - replace via CI/CD
+container_apps_cpu_limit   = "0.25"          # Free tier: 0.25 CPU
+container_apps_memory_limit = "0.5Gi"        # Free tier: 0.5 GB memory
+container_apps_min_replicas = 0              # Scale to zero for cost optimization
+container_apps_max_replicas = 3              # Limit replicas for free tier
+
+# ==============================================================================
+# STORAGE CONFIGURATION (FREE TIER)
+# ==============================================================================
+storage_account_tier             = "Standard"
+storage_account_replication_type = "LRS" # Locally redundant for free tier
+
+# ==============================================================================
+# SECURITY CONFIGURATION
+# ==============================================================================
+key_vault_soft_delete_retention_days = 7 # Minimum for testing
+
+# ==============================================================================
+# COMMUNICATION SERVICES (FREE TIER)
+# ==============================================================================
+web_pubsub_sku = "Free_F1" # Free tier: 20 connections, 20K messages/day
 
 # ==============================================================================
 # IDENTITY CONFIGURATION
 # ==============================================================================
 application_name       = "Campus Study Buddy"
-frontend_hostname      = "campus-study-buddy.azurestaticapps.net"
-b2c_tenant_name        = "campusstudybuddy"
+frontend_hostname      = "csb-prod.azurestaticapps.net"
+b2c_tenant_name        = "csbprod"
 b2c_signin_policy      = "signupsignin"
 enable_azure_ad_groups = false
 
 # ==============================================================================
-# NETWORKING CONFIGURATION  
+# STATIC WEB APP CONFIGURATION (FREE TIER)
 # ==============================================================================
-vnet_address_space               = ["10.0.0.0/16"]
-database_subnet_address_prefixes = ["10.0.1.0/24"]
-compute_subnet_address_prefixes  = ["10.0.2.0/24"]
-storage_subnet_address_prefixes  = ["10.0.3.0/24"]
-
-# ==============================================================================
-# DATABASE CONFIGURATION
-# ==============================================================================
-database_admin_username = "sqladmin"
-database_sku_name       = "Basic"
-database_max_size_gb    = 2
-create_managed_db       = true
-enable_sql_database     = true
-
-# ==============================================================================
-# COMPUTE CONFIGURATION
-# ==============================================================================
-container_app_min_replicas = 0
-container_app_max_replicas = 10
-
-# ==============================================================================
-# STORAGE CONFIGURATION
-# ==============================================================================
-storage_account_tier             = "Standard"
-storage_account_replication_type = "LRS"
-
-# ==============================================================================
-# SECURITY CONFIGURATION
-# ==============================================================================
-enable_private_endpoints = true
-allowed_ip_ranges        = ["0.0.0.0/0"]
-
-# ==============================================================================
-# TAGS
-# ==============================================================================
-tags = {
-  Environment = "production"
-  Project     = "campus-study-buddy"
-  ManagedBy   = "terraform"
-  Owner       = "development-team"
-}
+static_web_app_sku_tier = "Free" # Free tier: 100 GB bandwidth, 0.5 GB storage

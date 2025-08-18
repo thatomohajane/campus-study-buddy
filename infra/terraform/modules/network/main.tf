@@ -53,17 +53,11 @@ resource "azurerm_subnet" "container_apps" {
     "Microsoft.Sql"
   ]
 
-  delegation {
-    name = "Microsoft.App/environments"
-
-    service_delegation {
-      name = "Microsoft.App/environments"
-      actions = [
-        "Microsoft.Network/virtualNetworks/subnets/join/action"
-      ]
-    }
-  }
+  # Note: Delegation removed - let Container App Environment handle it
+  # This prevents the "SubnetIsDelegated" error
 }
+
+# Storage subnet with private endpoints
 
 # Storage subnet with private endpoints
 resource "azurerm_subnet" "storage" {

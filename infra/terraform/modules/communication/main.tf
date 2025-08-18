@@ -67,7 +67,8 @@ resource "azurerm_key_vault_secret" "web_pubsub_connection_string" {
   value        = azurerm_web_pubsub.main.primary_connection_string
   key_vault_id = var.key_vault_id
 
-  tags = var.tags
+  depends_on = [var.key_vault_rbac_assignment]
+  tags       = var.tags
 }
 
 resource "azurerm_key_vault_secret" "web_pubsub_access_key" {
@@ -75,7 +76,8 @@ resource "azurerm_key_vault_secret" "web_pubsub_access_key" {
   value        = azurerm_web_pubsub.main.primary_access_key
   key_vault_id = var.key_vault_id
 
-  tags = var.tags
+  depends_on = [var.key_vault_rbac_assignment]
+  tags       = var.tags
 }
 
 # ==============================================================================
